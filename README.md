@@ -9,10 +9,10 @@ The application is deployed on **Vercel** so it can be accessed globally.
 
 ## Tech Stack
 
-**Frontend**: React.js | CSS / Tailwind CSS | Axios
-**Backend**: Node.js | Express.js | MongoDB | Mongoose
-**Payments**: Stripe | Razorpay
-**Deployment**: Vercel
+* **Frontend**: React.js | CSS / Tailwind CSS | Axios
+* **Backend**: Node.js | Express.js | MongoDB | Mongoose
+* **Payments**: Stripe | Razorpay
+* **Deployment**: Vercel
 
 ---
 
