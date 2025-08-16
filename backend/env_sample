@@ -1,0 +1,11 @@
+
+MONGODB_URI="mongodb uri"
+CLOUDINARY_API_KEY="cloudinary api key"
+CLOUDINARY_API_SECRET="cloudinary secret key"
+CLOUDINARY_NAME="cloudinary name"
+JWT_SECRET="secret id"
+ADMIN_EMAIL="admin email"
+ADMIN_PASSWORD="admin acc password"
+STRIPE_SECRET_KEY="stripe test secret key"
+RAZORPAY_KEY_SECRET="razorpay secret key"
+RAZORPAY_KEY_ID="razorpay key id"
