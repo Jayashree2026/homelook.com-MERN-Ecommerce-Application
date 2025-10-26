@@ -10,7 +10,7 @@
           "backend/routes/**",
           "backend/models/**",
           "backend/controllers/**",
-          "backend/middleware/**",
+          "backend/middleware/**"
             
         ]
       }
