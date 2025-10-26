@@ -6,6 +6,8 @@ import { ShopContext } from '../context/ShopContext';
 import axios from "axios"
 import { toast } from 'react-toastify';
 
+
+
 const Placeorder = () => {
 
     const [method, setMethod] = useState('cod');
@@ -29,7 +31,30 @@ const Placeorder = () => {
         setFormdata(data => ({ ...data, [name]: value }))
     }
 
-    const initPay = (order) => {
+    const initPay = async (order) => {
+        const loadScript = (src) => {
+            return new Promise((resolve) => {
+                const script = document.createElement('script');
+                script.src = src;
+                script.onload = () => resolve(true);
+                script.onerror = () => resolve(false);
+                document.body.appendChild(script);
+            });
+        };
+
+        const res = await loadScript("https://checkout.razorpay.com/v1/checkout.js");
+
+        if (!res) {
+            toast.error("Razorpay SDK failed to load. Are you online?");
+            return;
+        }
+
+        if (!window.Razorpay) {
+            toast.error("Razorpay SDK not available.");
+            return;
+        }
+
+
         const options = {
             key: import.meta.env.VITE_RAZORPAY_KEY_ID,
             amount: order.amount,
@@ -75,12 +100,13 @@ const Placeorder = () => {
             let orderdata = {
                 address: formData,
                 items: orderitems,
-                amount: getCartAmount() + delivery_fee
+                amount: getCartAmount() + delivery_fee,
+                userId: token ? JSON.parse(atob(token.split('.')[1])).id : null,
             }
             switch (method) {
                 case 'cod':
                     const response = await axios.post(backendUrl + '/api/order/place', orderdata, { headers: { token } })
-                    
+
                     if (response.data.success) {
                         setCartItems({})
                         navigate('/orders')
@@ -91,7 +117,7 @@ const Placeorder = () => {
                     break;
 
                 case 'stripe':
-                    const responseStripe = await axios.post(backendUrl + '/api/order/stripe', orderdata, { headers: { token} })
+                    const responseStripe = await axios.post(backendUrl + '/api/order/stripe', orderdata, { headers: { token } })
                     if (responseStripe.data.success) {
                         const { session_url } = responseStripe.data
                         window.location.replace(session_url)
@@ -262,7 +288,7 @@ const Placeorder = () => {
 
                 <div className="w-full text-right mt-8">
                     <button
-                        type="submit" 
+                        type="submit"
                         className="bg-black text-white text-base font-semibold py-3 px-8 rounded-md hover:bg-gray-900 transition"
                     >
                         PLACE ORDER

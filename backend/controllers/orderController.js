@@ -7,14 +7,14 @@ import 'dotenv/config';
 
 
 const currency = "inr"
-const deliveryCharge = 10
+const deliveryCharge = 30
 
 const stripe = new Stripe(process.env.STRIPE_SECRET_KEY)
 console.log("Stripe Key:", process.env.STRIPE_SECRET_KEY);
 
-const razorpayInstance=new razorpay({
-    key_id:process.env.RAZORPAY_KEY_ID,
-    key_secret:process.env.RAZORPAY_KEY_SECRET,
+const razorpayInstance = new razorpay({
+    key_id: process.env.RAZORPAY_KEY_ID,
+    key_secret: process.env.RAZORPAY_KEY_SECRET,
 })
 
 
@@ -47,12 +47,21 @@ const placeorder = async (req, res) => {
         res.json({ success: false, message: error.message })
     }
 }
+
 const placeorderStripe = async (req, res) => {
     try {
-        const {userId,items, amount, address } = req.body;
+        const { userId, items, amount, address } = req.body;
         const { origin } = req.headers;
-        
 
+        // ✅ Minimum Stripe order amount validation
+        if (amount < 42) {
+            return res.json({
+                success: false,
+                message: "Minimum order amount for Stripe is ₹42.",
+            });
+        }
+
+        // ✅ Prepare order data (payment not verified yet)
         const orderData = {
             userId,
             items,
@@ -63,52 +72,45 @@ const placeorderStripe = async (req, res) => {
             date: Date.now(),
         };
 
-        const newOrder = new orderModel(orderData);
-        await newOrder.save();
+        const newOrder = await orderModel.create(orderData);
 
-
+        // ✅ Convert items into Stripe line items
         const line_items = items.map((item) => ({
             price_data: {
-                currency: currency,
-                product_data: {
-                    name: item.name
-                },
-                unit_amount: deliveryCharge * 100
+                currency,
+                product_data: { name: item.name },
+                unit_amount: Math.round(item.price * 100), // convert to paisa
             },
-            quantity: item.quantity
+            quantity: item.quantity,
+        }));
 
-
-        }))
+        // ✅ Add delivery charge as a separate line item
         line_items.push({
             price_data: {
-                currency: currency,
-                product_data: {
-                    name: "Delivery charges"
-                },
-                unit_amount: deliveryCharge * 100
+                currency,
+                product_data: { name: "Delivery Charges" },
+                unit_amount: deliveryCharge * 100,
             },
-            quantity: 1
+            quantity: 1,
+        });
 
-
-
-        })
-
+        // ✅ Create Stripe Checkout session
         const session = await stripe.checkout.sessions.create({
             success_url: `${origin}/verify?success=true&orderId=${newOrder._id}`,
             cancel_url: `${origin}/verify?success=false&orderId=${newOrder._id}`,
             line_items,
             mode: 'payment',
-        })
+        });
 
-        res.json({ success: true, session_url: session.url });
-
-
+        return res.json({ success: true, session_url: session.url });
     } catch (error) {
-
-        console.log(error)
-        res.json({ success: false, message: error.message })
+        console.error("Stripe Checkout Error:", error);
+        res.json({ success: false, message: error.message });
     }
-}
+};
+
+
+
 // Placing orders using Razorpay Method
 const placeorderRazorpay = async (req, res) => {
     try {
@@ -129,9 +131,10 @@ const placeorderRazorpay = async (req, res) => {
 
         const options = {
             amount: amount * 100,
-            currency: currency.toUpperCase(),
+            currency: "INR",
             receipt: newOrder._id.toString()
-        }
+        };
+
 
         await razorpayInstance.orders.create(options, (error, order) => {
             if (error) {
@@ -183,10 +186,10 @@ const verifyRazorpay = async (req, res) => {
         res.json({ success: false, message: error.message });
     }
 }
-const allOrders = async (req,res) => {
+const allOrders = async (req, res) => {
     try {
         const orders = await orderModel.find({})
-        res.json({ success: true , orders})
+        res.json({ success: true, orders })
     } catch (error) {
         console.log(error);
         res.json({ success: false, message: error.message });
@@ -220,4 +223,4 @@ const updateStatus = async (req, res) => {
 
 
 
-export  { updateStatus, allOrders, userOrders, verifyRazorpay, verifyStripe, placeorder, placeorderRazorpay, placeorderStripe }
+export { updateStatus, allOrders, userOrders, verifyRazorpay, verifyStripe, placeorder, placeorderRazorpay, placeorderStripe }
