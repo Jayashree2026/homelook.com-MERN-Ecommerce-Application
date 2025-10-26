@@ -1,7 +1,7 @@
 import express from "express"
 import cors from 'cors'
 import 'dotenv/config'
-import connectDB from './config/Mongodb.js'
+import connectDB from './config/MongoDb.js'
 import connectCloudinary from './config/Cloudinary.js'
 import userRouter from './routes/userRoutes.js'
 import productRouter from './routes/productRoutes.js'
